@@ -4,6 +4,7 @@
 ## 用法
 
  php analytic.php filename.csv
+ php analytic.php filename.csv 流量偏移量 IP偏移量 访问网址偏移量
 
 ## 依赖
 

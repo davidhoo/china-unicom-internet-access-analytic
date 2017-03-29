@@ -2,8 +2,18 @@
 ini_set('auto_detect_line_endings',TRUE);
 error_reporting(0);
 
+$trafficOffset = 6;
+$ipOffset = 16;
+$uriOffset = 32;
+
 if ($argc <= 1) {
     help();
+}
+
+if ($argc == 5) {
+    $trafficOffset = $argv[2];
+    $ipOffset = $argv[3];
+    $uriOffset = $argv[4];
 }
 
 $file = $argv[1];
@@ -177,40 +187,40 @@ $ipWhiteList = [
 ];
 
 function inWhiteList($line) {
-    global $domainWhiteList, $ipWhiteList;
+    global $domainWhiteList, $ipWhiteList, $trafficOffset, $ipOffset, $uriOffset;
     $pattern = '/.*' . implode('|.*', $domainWhiteList) . '/';
-    if(preg_match($pattern, explode(' ', trim($line[32]))) || in_array($line[16], $ipWhiteList)) {
+    if(preg_match($pattern, explode(' ', trim($line[$uriOffset]))) || in_array($line[$ipOffset], $ipWhiteList)) {
         return true;
     }
     return false;
 }
 
 while($line = fgetcsv($handle, 2048, ",")) {
-    $total += $line[6];
-    if (empty($line[6]) || empty($line[16])) {
+    $total += $line[$trafficOffset];
+    if (empty($line[$trafficOffset]) || empty($line[$ipOffset])) {
         continue;
     }
     if (inWhiteList($line)) {
         continue;
     }
     $idx ++;
-    $sum += $line[6];
-    echo $idx, "\t", $line[6], "\t", $line[16], "\t", $line[23], "\n";
+    $sum += $line[$trafficOffset];
+    echo $idx, "\t", $line[$trafficOffset], "\t", $line[$ipOffset], "\t", $line[$uriOffset], "\n";
 
     // top 10
-    $data[$line[16]] += $line[6];
-    $desc[$line[16]] = $line[23];
+    $data[$line[$ipOffset]] += $line[$trafficOffset];
+    $desc[$line[$ipOffset]] = $line[$uriOffset];
 }
 
-echo str_pad(' Stat ', 60, '=', STR_PAD_BOTH), "\n",
+echo str_pad(' Stat ', 70, '=', STR_PAD_BOTH), "\n",
     "sum:", round($sum/1024, 2), "Mb\t", "total:", round($total/1024, 2), "Mb\tpercent:", round($sum*100/$total,2), "%\n";
 
 arsort($data);
 
-echo str_pad(' Top 10 ', 60, '=', STR_PAD_BOTH), "\n";
+echo str_pad(' Top 10 ', 70, '=', STR_PAD_BOTH), "\n";
 $data = array_slice($data,0, 9);
 foreach($data as $k=>$v) {
-    echo $k, "\t" , $v, "\t", str_pad($desc[$k],20), "\t", round($v*100/$sum), "%\n";
+    echo $k, "\t" , str_pad($v, 10), "\t", str_pad($desc[$k],30), "\t", round($v*100/$sum), "%\n";
 }
 
 ini_set('auto_detect_line_endings',FALSE);

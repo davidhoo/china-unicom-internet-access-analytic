@@ -5,15 +5,17 @@ error_reporting(0);
 $trafficOffset = 6;
 $ipOffset = 16;
 $uriOffset = 32;
+$uaOffset = 13;
 
 if ($argc <= 1) {
     help();
 }
 
-if ($argc == 5) {
-    $trafficOffset = $argv[2];
-    $ipOffset = $argv[3];
-    $uriOffset = $argv[4];
+if ($argc > 1) {
+    $trafficOffset = $argv[2] ?? 6;
+    $ipOffset = $argv[3] ?? 16;
+    $uriOffset = $argv[4] ?? 21;
+    $uaOffset = $argv[5] ?? 23;
 }
 
 $file = $argv[1];
@@ -189,7 +191,7 @@ $ipWhiteList = [
 function inWhiteList($line) {
     global $domainWhiteList, $ipWhiteList, $trafficOffset, $ipOffset, $uriOffset;
     $pattern = '/.*' . implode('|.*', $domainWhiteList) . '/';
-    if(preg_match($pattern, explode(' ', trim($line[$uriOffset]))) || in_array($line[$ipOffset], $ipWhiteList)) {
+    if(preg_match($pattern, explode(' ', trim($line[$uriOffset]))[0]) || in_array($line[$ipOffset], $ipWhiteList)) {
         return true;
     }
     return false;
@@ -200,27 +202,40 @@ while($line = fgetcsv($handle, 2048, ",")) {
     if (empty($line[$trafficOffset]) || empty($line[$ipOffset])) {
         continue;
     }
+
+    $desc[$line[$ipOffset]][0][] = $line[$uriOffset];
+    $desc[$line[$ipOffset]][1][] = $line[$uaOffset];
+
     if (inWhiteList($line)) {
         continue;
     }
     $idx ++;
     $sum += $line[$trafficOffset];
-    echo $idx, "\t", $line[$trafficOffset], "\t", $line[$ipOffset], "\t", $line[$uriOffset], "\n";
+    /*
+    echo $idx, "\t",
+        str_pad($line[$trafficOffset],10, ' ', STR_PAD_LEFT), "\t",
+        str_Pad($line[$ipOffset], 15, ' '), "\t",
+        str_pad($line[$uriOffset], 40, ' '), "\t",
+        $line[$uaOffset], "\t",
+        "\n";
+     */
 
     // top 10
     $data[$line[$ipOffset]] += $line[$trafficOffset];
-    $desc[$line[$ipOffset]] = $line[$uriOffset];
 }
 
-echo str_pad(' Stat ', 70, '=', STR_PAD_BOTH), "\n",
-    "sum:", round($sum/1024, 2), "Mb\t", "total:", round($total/1024, 2), "Mb\tpercent:", round($sum*100/$total,2), "%\n";
+echo str_pad(' Stat ', 200, '=', STR_PAD_BOTH), "\n",
+    "sum:", round($sum/1024, 2), "MB\t", "total:", round($total/1024, 2), "Mb\tpercent:", round($sum*100/$total,2), "%\n";
 
 arsort($data);
 
-echo str_pad(' Top 10 ', 70, '=', STR_PAD_BOTH), "\n";
+echo str_pad(' Top 10 ', 200, '=', STR_PAD_BOTH), "\n";
 $data = array_slice($data,0, 9);
 foreach($data as $k=>$v) {
-    echo $k, "\t" , str_pad($v, 10), "\t", str_pad($desc[$k],30), "\t", round($v*100/$sum), "%\n";
+    echo $k, "\t" , str_pad($v, 10, ' ', STR_PAD_LEFT), "KB\t",
+        str_pad(round($v*100/$sum),3, ' ', STR_PAD_LEFT), "%\t",
+        str_pad(join(',', array_unique($desc[$k][1])), 50), "\t",
+        str_pad(join(',', array_slice(array_unique($desc[$k][0]), 0, 3)),30), "\n";
 }
 
 ini_set('auto_detect_line_endings',FALSE);

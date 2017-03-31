@@ -198,6 +198,13 @@ function inWhiteList($line) {
 }
 
 while($line = fgetcsv($handle, 2048, ",")) {
+    if (in_array('总流量(kb)', $line)) {
+        $descIndex = array_flip($line);
+        $trafficOffset = $descIndex['总流量(kb)'];
+        $ipOffset = $descIndex['访问IP'];
+        $uriOffset = $descIndex['访问网址'];
+        $uaOffset = $descIndex['User Agent'];
+    }
     $total += $line[$trafficOffset];
     if (empty($line[$trafficOffset]) || empty($line[$ipOffset])) {
         continue;
@@ -224,12 +231,12 @@ while($line = fgetcsv($handle, 2048, ",")) {
     $data[$line[$ipOffset]] += $line[$trafficOffset];
 }
 
-echo str_pad(' Stat ', 200, '=', STR_PAD_BOTH), "\n",
+echo str_pad(' Stat ', 150, '=', STR_PAD_BOTH), "\n",
     "sum:", round($sum/1024, 2), "MB\t", "total:", round($total/1024, 2), "Mb\tpercent:", round($sum*100/$total,2), "%\n";
 
 arsort($data);
 
-echo str_pad(' Top 10 ', 200, '=', STR_PAD_BOTH), "\n";
+echo str_pad(' Top 10 ', 150, '=', STR_PAD_BOTH), "\n";
 $data = array_slice($data,0, 9);
 foreach($data as $k=>$v) {
     echo $k, "\t" , str_pad($v, 10, ' ', STR_PAD_LEFT), "KB\t",

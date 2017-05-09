@@ -197,7 +197,8 @@ function inWhiteList($line) {
     return false;
 }
 
-while($line = fgetcsv($handle, 2048, ",")) {
+while($origline = fgets($handle)) { //fgetcsv can't treat UTF-8 characters properly under certain conditions
+	$line = explode(',', $origline);
     if (in_array('总流量(kb)', $line)) {
         $descIndex = array_flip($line);
         $trafficOffset = $descIndex['总流量(kb)'];
